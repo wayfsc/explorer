@@ -35,11 +35,10 @@ function usage() {
 
 // check options
 if (process.argv[2] == 'index') {
-  if (process.argv.length <3) {
+  if (process.argv.length < 3) {
     usage();
   } else {
-    switch(process.argv[3])
-    {
+    switch (process.argv[3]) {
       case 'update':
         mode = 'update';
         break;
@@ -56,14 +55,14 @@ if (process.argv[2] == 'index') {
         usage();
     }
   }
-} else if (process.argv[2] == 'market'){
+} else if (process.argv[2] == 'market') {
   database = 'market';
 } else {
   usage();
 }
 
 function create_lock(cb) {
-  if ( database == 'index' ) {
+  if (database == 'index') {
     var fname = './tmp/' + database + '.pid';
     fs.appendFile(fname, process.pid.toString(), function (err) {
       if (err) {
@@ -79,10 +78,10 @@ function create_lock(cb) {
 }
 
 function remove_lock(cb) {
-  if ( database == 'index' ) {
+  if (database == 'index') {
     var fname = './tmp/' + database + '.pid';
-    fs.unlink(fname, function (err){
-      if(err) {
+    fs.unlink(fname, function (err) {
+      if (err) {
         console.log("unable to remove lock: %s", fname);
         process.exit(1);
       } else {
@@ -95,10 +94,10 @@ function remove_lock(cb) {
 }
 
 function is_locked(cb) {
-  if ( database == 'index' ) {
+  if (database == 'index') {
     var fname = './tmp/' + database + '.pid';
-    fs.exists(fname, function (exists){
-      if(exists) {
+    fs.exists(fname, function (exists) {
+      if (exists) {
         return cb(true);
       } else {
         return cb(false);
@@ -110,7 +109,7 @@ function is_locked(cb) {
 }
 
 function exit() {
-  remove_lock(function(){
+  remove_lock(function () {
     mongoose.disconnect();
     process.exit(0);
   });
@@ -127,47 +126,47 @@ is_locked(function (exists) {
     console.log("Script already running..");
     process.exit(0);
   } else {
-    create_lock(function (){
+    create_lock(function () {
       console.log("script launched with pid: " + process.pid);
-      mongoose.connect(dbString, function(err) {
+      mongoose.connect(dbString, function (err) {
         if (err) {
           console.log('Unable to connect to database: %s', dbString);
           console.log('Aborting');
           exit();
         } else if (database == 'index') {
-          db.check_stats(settings.coin, function(exists) {
+          db.check_stats(settings.coin, function (exists) {
             if (exists == false) {
               console.log('Run \'npm start\' to create database structures before running this script.');
               exit();
             } else {
-              db.update_db(settings.coin, function(stats){
+              db.update_db(settings.coin, function (stats) {
                 if (settings.heavy == true) {
-                  db.update_heavy(settings.coin, stats.count, 20, function(){
+                  db.update_heavy(settings.coin, stats.count, 20, function () {
 
                   });
                 }
                 if (mode == 'reindex') {
-                  Tx.deleteMany({}, function(err) { 
+                  Tx.deleteMany({}, function (err) {
                     console.log('TXs cleared.');
-                    Address.deleteMany({}, function(err2) { 
+                    Address.deleteMany({}, function (err2) {
                       console.log('Addresses cleared.');
-                      AddressTx.deleteMany({}, function(err3) {
+                      AddressTx.deleteMany({}, function (err3) {
                         console.log('Address TXs cleared.');
-                        Richlist.updateOne({coin: settings.coin}, {
+                        Richlist.updateOne({ coin: settings.coin }, {
                           received: [],
                           balance: [],
-                        }, function(err3) { 
-                          Stats.updateOne({coin: settings.coin}, { 
+                        }, function (err3) {
+                          Stats.updateOne({ coin: settings.coin }, {
                             last: 0,
                             count: 0,
                             supply: 0,
-                          }, function() {
+                          }, function () {
                             console.log('index cleared (reindex)');
-                          }); 
-                          db.update_tx_db(settings.coin, 1, stats.count, settings.update_timeout, function(){
-                            db.update_richlist('received', function(){
-                              db.update_richlist('balance', function(){
-                                db.get_stats(settings.coin, function(nstats){
+                          });
+                          db.update_tx_db(settings.coin, 1, stats.count, settings.update_timeout, function () {
+                            db.update_richlist('received', function () {
+                              db.update_richlist('balance', function () {
+                                db.get_stats(settings.coin, function (nstats) {
                                   console.log('reindex complete (block: %s)', nstats.last);
                                   exit();
                                 });
@@ -179,17 +178,17 @@ is_locked(function (exists) {
                     });
                   });
                 } else if (mode == 'check') {
-                  db.update_tx_db(settings.coin, 1, stats.count, settings.check_timeout, function(){
-                    db.get_stats(settings.coin, function(nstats){
+                  db.update_tx_db(settings.coin, 1, stats.count, settings.check_timeout, function () {
+                    db.get_stats(settings.coin, function (nstats) {
                       console.log('check complete (block: %s)', nstats.last);
                       exit();
                     });
                   });
                 } else if (mode == 'update') {
-                  db.update_tx_db(settings.coin, stats.last, stats.count, settings.update_timeout, function(){
-                    db.update_richlist('received', function(){
-                      db.update_richlist('balance', function(){
-                        db.get_stats(settings.coin, function(nstats){
+                  db.update_tx_db(settings.coin, stats.last, stats.count, settings.update_timeout, function () {
+                    db.update_richlist('received', function () {
+                      db.update_richlist('balance', function () {
+                        db.get_stats(settings.coin, function (nstats) {
                           console.log('update complete (block: %s)', nstats.last);
                           exit();
                         });
@@ -198,23 +197,23 @@ is_locked(function (exists) {
                   });
                 } else if (mode == 'reindex-rich') {
                   console.log('update started');
-                  db.update_tx_db(settings.coin, stats.last, stats.count, settings.check_timeout, function(){
+                  db.update_tx_db(settings.coin, stats.last, stats.count, settings.check_timeout, function () {
                     console.log('update finished');
-                    db.check_richlist(settings.coin, function(exists){
+                    db.check_richlist(settings.coin, function (exists) {
                       if (exists == true) {
                         console.log('richlist entry found, deleting now..');
                       }
-                      db.delete_richlist(settings.coin, function(deleted) {
+                      db.delete_richlist(settings.coin, function (deleted) {
                         if (deleted == true) {
                           console.log('richlist entry deleted');
                         }
-                        db.create_richlist(settings.coin, function() {
+                        db.create_richlist(settings.coin, function () {
                           console.log('richlist created.');
-                          db.update_richlist('received', function(){
+                          db.update_richlist('received', function () {
                             console.log('richlist updated received.');
-                            db.update_richlist('balance', function(){
+                            db.update_richlist('balance', function () {
                               console.log('richlist updated balance.');
-                              db.get_stats(settings.coin, function(nstats){
+                              db.get_stats(settings.coin, function (nstats) {
                                 console.log('update complete (block: %s)', nstats.last);
                                 exit();
                               });
@@ -222,7 +221,7 @@ is_locked(function (exists) {
                           });
                         });
                       });
-                    }); 
+                    });
                   });
                 }
               });
@@ -234,9 +233,9 @@ is_locked(function (exists) {
           var complete = 0;
           for (var x = 0; x < markets.length; x++) {
             var market = markets[x];
-            db.check_market(market, function(mkt, exists) {
+            db.check_market(market, function (mkt, exists) {
               if (exists) {
-                db.update_markets_db(mkt, function(err) {
+                db.update_markets_db(mkt, function (err) {
                   if (!err) {
                     console.log('%s market data updated successfully.', mkt);
                     complete++;
